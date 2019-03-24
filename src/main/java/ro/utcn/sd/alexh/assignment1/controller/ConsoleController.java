@@ -8,6 +8,7 @@ import ro.utcn.sd.alexh.assignment1.entity.Tag;
 import ro.utcn.sd.alexh.assignment1.entity.User;
 import ro.utcn.sd.alexh.assignment1.exception.AnswerNotFoundException;
 import ro.utcn.sd.alexh.assignment1.exception.QuestionNotFoundException;
+import ro.utcn.sd.alexh.assignment1.exception.UserAlreadyExists;
 import ro.utcn.sd.alexh.assignment1.exception.UserNotFoundException;
 import ro.utcn.sd.alexh.assignment1.service.QuestionManagementService;
 import ro.utcn.sd.alexh.assignment1.service.TagManagementService;
@@ -128,21 +129,24 @@ public class ConsoleController implements CommandLineRunner {
 
     private void handleRegisterUser() {
         String email;
-        String username;
+        String username = "";
         String password;
+        boolean usernameAlreadyExists = false;
 
         email = input("Email = ");
 
         do {
-            username = input("Username = ");
-            if (userManagementService.usernameAlreadyExists(username)) {
+            try {
+                username = input("Username = ");
+                usernameAlreadyExists = false;
+                password = input("Password = ");
+                userManagementService.addUser(null, email, username, password, "regular", 0, false);
+            } catch (UserAlreadyExists e) {
                 System.out.println("This username already exists.");
+                usernameAlreadyExists = true;
             }
-        } while (userManagementService.usernameAlreadyExists(username));
+        } while (usernameAlreadyExists);
 
-        password = input("Password = ");
-
-        userManagementService.addUser(null, email, username, password, "regular", 0, false);
         System.out.println("User " + username + " was registered successfully.");
     }
 
