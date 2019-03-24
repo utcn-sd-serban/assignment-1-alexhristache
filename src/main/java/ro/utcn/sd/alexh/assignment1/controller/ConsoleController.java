@@ -88,7 +88,7 @@ public class ConsoleController implements CommandLineRunner {
 
         for (Question question : questionsCopy) {
             if (question.getTitle().toLowerCase().contains(text)) {
-                System.out.println(question);
+                printQuestion(question);
             }
         }
     }
@@ -103,7 +103,7 @@ public class ConsoleController implements CommandLineRunner {
         for (Question question : questionsCopy) {
             for (Tag iteratingTag : question.getTags()) {
                 if (iteratingTag.getName().equals(tag)) {
-                    System.out.println(question);
+                    printQuestion(question);
                     break;
                 }
             }
@@ -180,12 +180,23 @@ public class ConsoleController implements CommandLineRunner {
         Collections.reverse(questionsCopy);
 
         for (Question question : questionsCopy) {
-            System.out.println(question);
+            printQuestion(question);
         }
     }
 
     private String input(String message) {
         System.out.print(message);
         return scanner.nextLine();
+    }
+
+    private void printQuestion(Question question) {
+        System.out.println(
+                "[Id=" + question.getQuestionId() + "] " + "\"" + question.getTitle() + "\"" + "\n"
+                + "Posted by " + userManagementService.findUserById(question.getUserId()).getUsername() + "\n"
+                + "Tags: " + question.getTags() + "\n"
+                + "\"" + question.getText() + "\"" + "\n"
+                + question.getCreationDateTime() + "\n"
+                + "Answers: \n" + question.getAnswers()
+        );
     }
 }

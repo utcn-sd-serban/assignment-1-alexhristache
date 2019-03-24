@@ -50,4 +50,10 @@ public class UserManagementService {
     public User addUser(Integer userId, String email, String username, String password, String type, int score, boolean isBanned) {
         return repositoryFactory.createUserRepository().save(new User(userId, email, username, password, type, score, isBanned));
     }
+
+    @Transactional
+    public User findUserById(Integer userId) {
+        Optional<User> maybeUser = repositoryFactory.createUserRepository().findById(userId);
+        return maybeUser.orElse(null);
+    }
 }
