@@ -81,34 +81,13 @@ public class ConsoleController implements CommandLineRunner {
     }
 
     private void handleListQuestionsByText() {
-        List<Question> questions = questionManagementService.listQuestions();
-        List<Question> questionsCopy = questions.subList(0, questions.size());
-        Collections.reverse(questionsCopy);
-
         String text = input("Text = ").toLowerCase();
-
-        for (Question question : questionsCopy) {
-            if (question.getTitle().toLowerCase().contains(text)) {
-                printQuestion(question);
-            }
-        }
+        printQuestionList(questionManagementService.listQuestionsByText(text));
     }
 
     private void handleListQuestionsByTag() {
-        List<Question> questions = questionManagementService.listQuestions();
-        List<Question> questionsCopy = questions.subList(0, questions.size());
-        Collections.reverse(questionsCopy);
-
         String tag = input("Tag = ").trim();
-
-        for (Question question : questionsCopy) {
-            for (Tag iteratingTag : question.getTags()) {
-                if (iteratingTag.getName().equals(tag)) {
-                    printQuestion(question);
-                    break;
-                }
-            }
-        }
+        printQuestionList(questionManagementService.listQuestionsByTag(tag));
     }
 
     private void handleLogout() {
@@ -158,20 +137,18 @@ public class ConsoleController implements CommandLineRunner {
         List<Tag> tags = new LinkedList<>();
 
         if (userManagementService.getLoggedUser() == null) {
-            System.out.println("Please log in before asking a question.");
+            System.out.println("Please log in before posting a question.");
             return;
         }
 
-        System.out.print("Title = ");
-        title = scanner.nextLine();
+        title = input("Title = ");
         String[] stringTags = input("Tags (separated by <,>): ").split("\\s*,\\s*");
         for (String stringTag : stringTags) {
             Tag tag = tagManagementService.addTag(null, stringTag);
             tags.add(tag);
         }
         currentUser = userManagementService.getLoggedUser();
-        System.out.println("Write your question below:");
-        text = scanner.nextLine();
+        text = input("Write your question below:");
         creationDateTime = new Timestamp(System.currentTimeMillis());
         questionManagementService.addQuestion(null, currentUser.getUserId(), title, text, creationDateTime, tags);
 
@@ -179,13 +156,7 @@ public class ConsoleController implements CommandLineRunner {
     }
 
     private void handleListQuestions() {
-        List<Question> questions = questionManagementService.listQuestions();
-        List<Question> questionsCopy = questions.subList(0, questions.size());
-        Collections.reverse(questionsCopy);
-
-        for (Question question : questionsCopy) {
-            printQuestion(question);
-        }
+        printQuestionList(questionManagementService.listQuestions());
     }
 
     private String input(String message) {
@@ -202,5 +173,11 @@ public class ConsoleController implements CommandLineRunner {
                 + question.getCreationDateTime() + "\n"
                 + "Answers: \n" + question.getAnswers()
         );
+    }
+
+    private void printQuestionList(List<Question> questionList) {
+        for (Question question : questionList) {
+            printQuestion(question);
+        }
     }
 }
