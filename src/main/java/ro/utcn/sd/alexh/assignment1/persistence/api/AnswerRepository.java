@@ -14,4 +14,6 @@ public interface AnswerRepository {
     void remove(Answer answer);
 
     List<Answer> findAll();
+
+    List<Answer> collectAnswersForQuestion(Integer questionId);
 }

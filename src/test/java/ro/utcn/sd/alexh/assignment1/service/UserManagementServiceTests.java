@@ -39,7 +39,7 @@ public class UserManagementServiceTests {
     @Test
     public void getLoggedUserTest() {
         userManagementService.login("username1", "password1");
-        Assert.assertEquals(userManagementService.getLoggedUser().getUserId().intValue(), 1);
+        Assert.assertEquals(userManagementService.getLoggedUser().get().getUserId().intValue(), 1);
     }
 
     @Test

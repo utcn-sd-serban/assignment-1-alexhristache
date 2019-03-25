@@ -28,8 +28,8 @@ public class UserManagementService {
     }
 
     @Transactional
-    public User getLoggedUser() {
-        return loggedUser;
+    public Optional<User> getLoggedUser() {
+        return Optional.ofNullable(loggedUser);
     }
 
     @Transactional

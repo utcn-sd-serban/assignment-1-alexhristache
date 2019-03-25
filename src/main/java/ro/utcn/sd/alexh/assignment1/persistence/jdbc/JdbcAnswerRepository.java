@@ -33,6 +33,7 @@ public class JdbcAnswerRepository implements AnswerRepository {
                 (resultSet, i) -> new Answer(
                         resultSet.getInt("answer_id"),
                         resultSet.getInt("user_id"),
+                        resultSet.getInt("question_id"),
                         resultSet.getString("text"),
                         resultSet.getTimestamp("creation_date_time")
                 ), id
@@ -51,9 +52,23 @@ public class JdbcAnswerRepository implements AnswerRepository {
                 new Answer(
                         resultSet.getInt("answer_id"),
                         resultSet.getInt("user_id"),
+                        resultSet.getInt("question_id"),
                         resultSet.getString("text"),
                         resultSet.getTimestamp("creation_date_time")
                 )
+        );
+    }
+
+    @Override
+    public List<Answer> collectAnswersForQuestion(Integer questionId) {
+        return template.query("SELECT * FROM answer WHERE answer.question_id = ?",
+                (resultSet, i) -> new Answer(
+                        resultSet.getInt("answer_id"),
+                        resultSet.getInt("user_id"),
+                        resultSet.getInt("question_id"),
+                        resultSet.getString("text"),
+                        resultSet.getTimestamp("creation_date_time")
+                ), questionId
         );
     }
 
@@ -65,6 +80,7 @@ public class JdbcAnswerRepository implements AnswerRepository {
         Map<String, Object> data = new HashMap<>();
         data.put("answer_id", answer.getAnswerId());
         data.put("user_id", answer.getUserId());
+        data.put("question_id", answer.getQuestionId());
         data.put("text", answer.getText());
         data.put("creation_date_time", answer.getCreationDateTime());
 

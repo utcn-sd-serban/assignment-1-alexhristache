@@ -2,10 +2,7 @@ package ro.utcn.sd.alexh.assignment1.entity;
 
 import lombok.*;
 
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
+import javax.persistence.*;
 import java.sql.Timestamp;
 
 @Data
@@ -20,6 +17,8 @@ public class Answer {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer answerId;
     private Integer userId;
+    @Column(name = "question_id")
+    private Integer questionId;
     private String text;
     private Timestamp creationDateTime;
 }

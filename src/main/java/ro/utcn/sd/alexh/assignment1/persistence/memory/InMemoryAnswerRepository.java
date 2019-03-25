@@ -3,10 +3,7 @@ package ro.utcn.sd.alexh.assignment1.persistence.memory;
 import ro.utcn.sd.alexh.assignment1.entity.Answer;
 import ro.utcn.sd.alexh.assignment1.persistence.api.AnswerRepository;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class InMemoryAnswerRepository implements AnswerRepository {
@@ -38,5 +35,19 @@ public class InMemoryAnswerRepository implements AnswerRepository {
     @Override
     public List<Answer> findAll() {
         return new ArrayList<>(data.values());
+    }
+
+    @Override
+    public List<Answer> collectAnswersForQuestion(Integer questionId) {
+
+        List<Answer> answerList = new LinkedList<>();
+
+        for (Answer answer : data.values()) {
+            if (answer.getQuestionId().equals(questionId)) {
+                answerList.add(answer);
+            }
+        }
+
+        return answerList;
     }
 }

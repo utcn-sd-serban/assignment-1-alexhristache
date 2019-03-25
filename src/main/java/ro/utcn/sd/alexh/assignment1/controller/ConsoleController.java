@@ -3,13 +3,12 @@ package ro.utcn.sd.alexh.assignment1.controller;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
+import ro.utcn.sd.alexh.assignment1.entity.Answer;
 import ro.utcn.sd.alexh.assignment1.entity.Question;
 import ro.utcn.sd.alexh.assignment1.entity.Tag;
 import ro.utcn.sd.alexh.assignment1.entity.User;
-import ro.utcn.sd.alexh.assignment1.exception.AnswerNotFoundException;
-import ro.utcn.sd.alexh.assignment1.exception.QuestionNotFoundException;
-import ro.utcn.sd.alexh.assignment1.exception.UserAlreadyExists;
-import ro.utcn.sd.alexh.assignment1.exception.UserNotFoundException;
+import ro.utcn.sd.alexh.assignment1.exception.*;
+import ro.utcn.sd.alexh.assignment1.service.AnswerManagementService;
 import ro.utcn.sd.alexh.assignment1.service.QuestionManagementService;
 import ro.utcn.sd.alexh.assignment1.service.TagManagementService;
 import ro.utcn.sd.alexh.assignment1.service.UserManagementService;
@@ -25,6 +24,7 @@ public class ConsoleController implements CommandLineRunner {
     private final QuestionManagementService questionManagementService;
     private final UserManagementService userManagementService;
     private final TagManagementService tagManagementService;
+    private final AnswerManagementService answerManagementService;
 
     @Override
     public void run(String... args) throws Exception {
@@ -72,11 +72,69 @@ public class ConsoleController implements CommandLineRunner {
             case "list questions -text":
                 handleListQuestionsByText();
                 return false;
+            case "add answer":
+                handleAddAnswer();
+                return false;
+            case "remove answer":
+                handleRemoveAnswer();
+                return false;
+            case "edit answer":
+                handleEditAnswer();
+                return false;
             case "exit":
                 return true;
             default:
                 System.out.println("Unknown command. Try again.");
                 return false;
+        }
+    }
+
+    private void handleEditAnswer() {
+        Optional<User> maybeUser = userManagementService.getLoggedUser();
+        if (maybeUser.isPresent()) {
+            Integer answerId = Integer.parseInt(input("Answer id = "));
+            String newText = input("Write your edited answer: ");
+
+            try {
+                answerManagementService.editAnswer(maybeUser.get().getUserId(), answerId, newText);
+            } catch (IllegalUserOperationException e) {
+                System.out.println("You can only edit answers you posted!");
+            } catch (AnswerNotFoundException e) {
+                System.out.println("Answer not found.");
+            }
+        } else {
+            System.out.println("Please log in before editing an answer.");
+        }
+    }
+
+    private void handleRemoveAnswer() {
+        Optional<User> maybeUser = userManagementService.getLoggedUser();
+        if (maybeUser.isPresent()) {
+            Integer answerId = Integer.parseInt(input("Answer id = "));
+            try {
+                answerManagementService.deleteAnswer(maybeUser.get().getUserId(), answerId);
+            } catch (IllegalUserOperationException e) {
+                System.out.println("You can only delete answers you posted!");
+            } catch (AnswerNotFoundException e) {
+                System.out.println("Answer not found.");
+            }
+        } else {
+            System.out.println("Please log in before removing an answer.");
+        }
+
+    }
+
+    private void handleAddAnswer() {
+        if (userManagementService.getLoggedUser().isPresent()) {
+            Integer questionId = Integer.parseInt(input("Question id = "));
+            String text = input("Your answer: ");
+            answerManagementService.addAnswer(null,
+                    userManagementService.getLoggedUser().get().getUserId(),
+                    questionId, text,
+                    new Timestamp(System.currentTimeMillis()));
+            System.out.println("Answer posted successfully");
+        } else {
+            System.out.println("Please log in before posting a question.");
         }
     }
 
@@ -130,29 +188,28 @@ public class ConsoleController implements CommandLineRunner {
     }
 
     private void handleAddQuestion() {
-        String title;
-        User currentUser;
-        String text;
-        Timestamp creationDateTime;
-        List<Tag> tags = new LinkedList<>();
+        if (userManagementService.getLoggedUser().isPresent()) {
+            String title;
+            User currentUser;
+            String text;
+            Timestamp creationDateTime;
+            List<Tag> tags = new LinkedList<>();
 
-        if (userManagementService.getLoggedUser() == null) {
+            title = input("Title = ");
+            String[] stringTags = input("Tags (separated by <,>): ").split("\\s*,\\s*");
+            for (String stringTag : stringTags) {
+                Tag tag = tagManagementService.addTag(null, stringTag);
+                tags.add(tag);
+            }
+            currentUser = userManagementService.getLoggedUser().get();
+            text = input("Your question: ");
+            creationDateTime = new Timestamp(System.currentTimeMillis());
+            questionManagementService.addQuestion(null, currentUser.getUserId(), title, text, creationDateTime, tags);
+
+            System.out.println("Your question was added successfully.");
+        } else {
             System.out.println("Please log in before posting a question.");
-            return;
         }
-
-        title = input("Title = ");
-        String[] stringTags = input("Tags (separated by <,>): ").split("\\s*,\\s*");
-        for (String stringTag : stringTags) {
-            Tag tag = tagManagementService.addTag(null, stringTag);
-            tags.add(tag);
-        }
-        currentUser = userManagementService.getLoggedUser();
-        text = input("Write your question below:");
-        creationDateTime = new Timestamp(System.currentTimeMillis());
-        questionManagementService.addQuestion(null, currentUser.getUserId(), title, text, creationDateTime, tags);
-
-        System.out.println("Your question was added successfully.");
     }
 
     private void handleListQuestions() {
@@ -169,13 +226,34 @@ public class ConsoleController implements CommandLineRunner {
                 "[Id=" + question.getQuestionId() + "] " + "\"" + question.getTitle() + "\"" + "\n"
                 + "Posted by " + userManagementService.findUserById(question.getUserId()).getUsername() + "\n"
                 + "Tags: " + question.getTags() + "\n"
-                + "\"" + question.getText() + "\"" + "\n"
+                + (char)27 + "[33m" + "\"" + question.getText() + "\"" + (char)27 + "[0m" + "\n"
                 + question.getCreationDateTime() + "\n"
-                + "Answers: \n" + question.getAnswers()
+                + "Answers:"
+        );
+        printAnswerList(question.getAnswers());
+    }
+
+    private void printAnswer(Answer answer) {
+        System.out.println(
+                "\t" +  "[Id=" + answer.getAnswerId() + "]" + "\n"
+                + "\t"+ "Posted by " + userManagementService.findUserById(answer.getUserId()).getUsername() + "\n"
+                + "\t" + (char)27 + "[35m" + "\"" + answer.getText() + "\"" + (char)27 + "[0m" + "\n"
+                + "\t" +  answer.getCreationDateTime() + "\n"
         );
     }
 
+    private void printAnswerList(List<Answer> answerList) {
+        if (answerList.isEmpty()) {
+            System.out.println("<empty>\n");
+        } else {
+            for (Answer answer : answerList) {
+                printAnswer(answer);
+            }
+        }
+    }
+
     private void printQuestionList(List<Question> questionList) {
+        answerManagementService.getAnswersForQuestion(questionList);
         for (Question question : questionList) {
             printQuestion(question);
         }
