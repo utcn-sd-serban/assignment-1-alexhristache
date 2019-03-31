@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ro.utcn.sd.alexh.assignment1.entity.Tag;
+import ro.utcn.sd.alexh.assignment1.exception.TagNotFoundException;
 import ro.utcn.sd.alexh.assignment1.persistence.api.RepositoryFactory;
 
 import java.util.List;
@@ -26,14 +27,20 @@ public class TagManagementService {
         Integer existingTagId = findTagIdByName(name);
 
         if (existingTagId == null) { // If the tag does not exist
-            return repositoryFactory.createTagRepository().save(new Tag(tagId, name));
+            return repositoryFactory.createTagRepository().save(new Tag(tagId, name.toLowerCase()));
         } else {
             return new Tag(existingTagId, name); // Tag exists, only return the object
         }
     }
 
-    private Integer findTagIdByName(String name) {
+    @Transactional
+    public Integer findTagIdByName(String name) {
         Optional<Tag> maybeTag = repositoryFactory.createTagRepository().findByName(name);
         return maybeTag.map(Tag::getTagId).orElse(null);
+    }
+
+    @Transactional
+    public Tag findTagById(Integer id) {
+        return repositoryFactory.createTagRepository().findById(id).orElseThrow(TagNotFoundException::new);
     }
 }

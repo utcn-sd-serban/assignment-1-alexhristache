@@ -24,7 +24,6 @@ public class JdbcQuestionRepository implements QuestionRepository {
         }
 
         // Insert also into question_tag, Many-to-Many relationship table
-
         SimpleJdbcInsert insertQuestionTag = new SimpleJdbcInsert(template);
         insertQuestionTag.setTableName("question_tag");
         insertQuestionTag.usingGeneratedKeyColumns("question_tag_id");
@@ -46,10 +45,18 @@ public class JdbcQuestionRepository implements QuestionRepository {
                         resultSet.getInt("user_id"),
                         resultSet.getString("title"),
                         resultSet.getString("text"),
-                        resultSet.getTimestamp("creation_date_time")
+                        resultSet.getTimestamp("creation_date_time"),
+                        resultSet.getInt("score")
                 ), id
         );
-        return questions.isEmpty() ? Optional.empty() : Optional.of(questions.get(0));
+
+        if (questions.isEmpty()) {
+            return Optional.empty();
+        } else {
+            Question question = questions.get(0);
+            question.setTags(getTags(question));
+            return Optional.of(question);
+        }
     }
 
     @Override
@@ -67,21 +74,26 @@ public class JdbcQuestionRepository implements QuestionRepository {
                         resultSet.getInt("user_id"),
                         resultSet.getString("title"),
                         resultSet.getString("text"),
-                        resultSet.getTimestamp("creation_date_time")
+                        resultSet.getTimestamp("creation_date_time"),
+                        resultSet.getInt("score")
                 )
         );
 
         for (Question question : questionList) {
-            List<Tag> tagList = template.query("SELECT * FROM tag WHERE tag_id IN (SELECT question_tag.tag_id FROM question_tag WHERE question_tag.question_id = ?)",
-                    (resultSet, i) -> new Tag(
-                            resultSet.getInt("tag_id"),
-                            resultSet.getString("name")
-                    ), question.getQuestionId()
-            );
-            question.setTags(tagList);
+            question.setTags(getTags(question));
+//            question.setScore(getVoteCount(question));
         }
 
         return questionList;
+    }
+
+    private List<Tag> getTags(Question question) {
+        return template.query("SELECT * FROM tag WHERE tag_id IN (SELECT question_tag.tag_id FROM question_tag WHERE question_tag.question_id = ?)",
+                (resultSet, i) -> new Tag(
+                        resultSet.getInt("tag_id"),
+                        resultSet.getString("name")
+                ), question.getQuestionId()
+        );
     }
 
     private Integer insert(Question question) {
@@ -95,14 +107,16 @@ public class JdbcQuestionRepository implements QuestionRepository {
         data.put("title", question.getTitle());
         data.put("text", question.getText());
         data.put("creation_date_time", question.getCreationDateTime());
+        data.put("score", question.getScore());
 
         return insert.executeAndReturnKey(data).intValue();
     }
 
     private void update(Question question) {
-        template.update("UPDATE question SET title = ?, text = ? WHERE question_id = ?",
+        template.update("UPDATE question SET title = ?, text = ?, score = ? WHERE question_id = ?",
                 question.getTitle(),
                 question.getText(),
+                question.getScore(),
                 question.getQuestionId());
     }
 }

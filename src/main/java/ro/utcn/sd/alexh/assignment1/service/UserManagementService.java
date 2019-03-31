@@ -4,7 +4,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ro.utcn.sd.alexh.assignment1.entity.User;
-import ro.utcn.sd.alexh.assignment1.exception.UserAlreadyExists;
+import ro.utcn.sd.alexh.assignment1.exception.LoginFailedException;
+import ro.utcn.sd.alexh.assignment1.exception.UserAlreadyExistsException;
+import ro.utcn.sd.alexh.assignment1.exception.UserNotFoundException;
+import ro.utcn.sd.alexh.assignment1.exception.UserNotLoggedException;
 import ro.utcn.sd.alexh.assignment1.persistence.api.RepositoryFactory;
 
 import java.util.List;
@@ -18,18 +21,22 @@ public class UserManagementService {
     private User loggedUser;
 
     @Transactional
-    public boolean login(String username, String password) {
+    public void login(String username, String password) {
         Optional<User> maybeUser = repositoryFactory.createUserRepository().findByUsername(username);
-        if (maybeUser.isPresent()) {
+        if (maybeUser.isPresent() && maybeUser.get().getPassword().equals(password)) {
             loggedUser = maybeUser.get();
-            return maybeUser.get().getPassword().equals(password);
+        } else {
+            throw new LoginFailedException();
         }
-        return false;
     }
 
     @Transactional
-    public Optional<User> getLoggedUser() {
-        return Optional.ofNullable(loggedUser);
+    public User getLoggedUser() {
+        if (loggedUser != null) {
+            return loggedUser;
+        } else {
+            throw new UserNotLoggedException();
+        }
     }
 
     @Transactional
@@ -46,7 +53,7 @@ public class UserManagementService {
     public User addUser(Integer userId, String email, String username, String password, String type, int score, boolean isBanned) {
         Optional<User> maybeUser = repositoryFactory.createUserRepository().findByUsername(username);
         if (maybeUser.isPresent()) {
-            throw new UserAlreadyExists();
+            throw new UserAlreadyExistsException();
         } else {
             return repositoryFactory.createUserRepository().save(new User(userId, email, username, password, type, score, isBanned));
         }

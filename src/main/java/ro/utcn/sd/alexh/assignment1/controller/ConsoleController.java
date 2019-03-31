@@ -8,10 +8,7 @@ import ro.utcn.sd.alexh.assignment1.entity.Question;
 import ro.utcn.sd.alexh.assignment1.entity.Tag;
 import ro.utcn.sd.alexh.assignment1.entity.User;
 import ro.utcn.sd.alexh.assignment1.exception.*;
-import ro.utcn.sd.alexh.assignment1.service.AnswerManagementService;
-import ro.utcn.sd.alexh.assignment1.service.QuestionManagementService;
-import ro.utcn.sd.alexh.assignment1.service.TagManagementService;
-import ro.utcn.sd.alexh.assignment1.service.UserManagementService;
+import ro.utcn.sd.alexh.assignment1.service.*;
 
 import java.sql.Timestamp;
 import java.util.*;
@@ -25,11 +22,11 @@ public class ConsoleController implements CommandLineRunner {
     private final UserManagementService userManagementService;
     private final TagManagementService tagManagementService;
     private final AnswerManagementService answerManagementService;
+    private final VoteService voteService;
 
     @Override
-    public void run(String... args) throws Exception {
+    public void run(String... args) {
         System.out.println("\nWelcome to the Poorly Implemented Stack Overflow system!\n");
-
         handleListQuestions();
 
         boolean done = false;
@@ -44,6 +41,22 @@ public class ConsoleController implements CommandLineRunner {
                 System.out.println("The answer with the given ID was not found!");
             } catch (UserNotFoundException e) {
                 System.out.println("The user with the given ID was not found!");
+            } catch (UserAlreadyExistsException e) {
+                System.out.println("An user with this name already exists!");
+            } catch (LoginFailedException e) {
+                System.out.println("Login failed. Please try again!");
+            } catch (IllegalUserOperationException e) {
+                System.out.println("You can only edit answers you posted!");
+            } catch (UserNotLoggedException e) {
+                System.out.println("You need to log in first!");
+            } catch (AlreadyVotedException e) {
+                System.out.println("You have already voted this!");
+            } catch (QuestionVoteNotFoundException e) {
+                System.out.println("Question Vote not found!");
+            } catch (AnswerVoteNotFoundException e) {
+                System.out.println("Answer Vote not found!");
+            } catch (SelfVoteException e) {
+                System.out.println("You cannot vote your posts!");
             }
         }
     }
@@ -81,6 +94,24 @@ public class ConsoleController implements CommandLineRunner {
             case "edit answer":
                 handleEditAnswer();
                 return false;
+            case "upvote question":
+                handleVoteQuestion(1);
+                return false;
+            case "downvote question":
+                handleVoteQuestion(-1);
+                return false;
+            case "upvote answer":
+                handleVoteAnswer(1);
+                return false;
+            case "downvote answer":
+                handleVoteAnswer(-1);
+                return false;
+            case "remove question vote":
+                handleRemoveQuestionVote();
+                return false;
+            case "remove answer vote":
+                handleRemoveAnswerVote();
+                return false;
             case "exit":
                 return true;
             default:
@@ -89,53 +120,66 @@ public class ConsoleController implements CommandLineRunner {
         }
     }
 
-    private void handleEditAnswer() {
-        Optional<User> maybeUser = userManagementService.getLoggedUser();
-        if (maybeUser.isPresent()) {
-            Integer answerId = Integer.parseInt(input("Answer id = "));
-            String newText = input("Write your edited answer: ");
+    private void handleRemoveAnswerVote() {
+        User loggedUser = userManagementService.getLoggedUser();
+        Integer answerId = Integer.parseInt(input("Answer id = "));
+        answerManagementService.findAnswerById(answerId); // Check if valid question
+        answerManagementService.removeVote(voteService.removeAnswerVote(answerId, loggedUser.getUserId()));
+    }
 
-            try {
-                answerManagementService.editAnswer(maybeUser.get().getUserId(), answerId, newText);
-            } catch (IllegalUserOperationException e) {
-                System.out.println("You can only edit answers you posted!");
-            } catch (AnswerNotFoundException e) {
-                System.out.println("Answer not found.");
-            }
-        } else {
-            System.out.println("Please log in before editing an answer.");
+    private void handleRemoveQuestionVote() {
+        User loggedUser = userManagementService.getLoggedUser();
+        Integer questionId = Integer.parseInt(input("Question id = "));
+        questionManagementService.findQuestionById(questionId); // Check if valid question
+        questionManagementService.removeVote(voteService.removeQuestionVote(questionId, loggedUser.getUserId()));
+    }
+
+    private void handleVoteAnswer(int vote) {
+        User loggedUser = userManagementService.getLoggedUser();
+        Integer answerId = Integer.parseInt(input("Answer id = "));
+        answerManagementService.findAnswerById(answerId); // Check if valid question
+        try {
+            answerManagementService.removeVote(voteService.removeAnswerVote(answerId, loggedUser.getUserId()));
+        } catch (AnswerVoteNotFoundException ignored) {
         }
+        answerManagementService.addVote(voteService.addAnswerVote(answerId, loggedUser.getUserId(), vote));
+    }
+
+    private void handleVoteQuestion(int vote) {
+        User loggedUser = userManagementService.getLoggedUser();
+        Integer questionId = Integer.parseInt(input("Question id = "));
+        questionManagementService.findQuestionById(questionId); // Check if valid question
+        try {
+            questionManagementService.removeVote(voteService.removeQuestionVote(questionId, loggedUser.getUserId()));
+        } catch (QuestionVoteNotFoundException ignored) {
+//            System.out.println("Caught something");
+        }
+        questionManagementService.addVote(voteService.addQuestionVote(questionId, loggedUser.getUserId(), vote));
+    }
+
+    private void handleEditAnswer() {
+        User loggedUser = userManagementService.getLoggedUser();
+        Integer answerId = Integer.parseInt(input("Answer id = "));
+        String newText = input("Write your edited answer: ");
+        answerManagementService.editAnswer(loggedUser.getUserId(), answerId, newText);
     }
 
     private void handleRemoveAnswer() {
-        Optional<User> maybeUser = userManagementService.getLoggedUser();
-        if (maybeUser.isPresent()) {
-            Integer answerId = Integer.parseInt(input("Answer id = "));
-            try {
-                answerManagementService.deleteAnswer(maybeUser.get().getUserId(), answerId);
-            } catch (IllegalUserOperationException e) {
-                System.out.println("You can only delete answers you posted!");
-            } catch (AnswerNotFoundException e) {
-                System.out.println("Answer not found.");
-            }
-        } else {
-            System.out.println("Please log in before removing an answer.");
-        }
-
+        User loggedUser = userManagementService.getLoggedUser();
+        Integer answerId = Integer.parseInt(input("Answer id = "));
+        answerManagementService.deleteAnswer(loggedUser.getUserId(), answerId);
     }
 
     private void handleAddAnswer() {
-        if (userManagementService.getLoggedUser().isPresent()) {
-            Integer questionId = Integer.parseInt(input("Question id = "));
-            String text = input("Your answer: ");
-            answerManagementService.addAnswer(null,
-                    userManagementService.getLoggedUser().get().getUserId(),
-                    questionId, text,
-                    new Timestamp(System.currentTimeMillis()));
-            System.out.println("Answer posted successfully");
-        } else {
-            System.out.println("Please log in before posting a question.");
-        }
+        User loggedUser = userManagementService.getLoggedUser();
+        Integer questionId = Integer.parseInt(input("Question id = "));
+        String text = input("Your answer: ");
+        answerManagementService.addAnswer(null,
+                loggedUser.getUserId(),
+                questionId, text,
+                new Timestamp(System.currentTimeMillis()),
+                0);
+        System.out.println("Answer posted successfully");
     }
 
     private void handleListQuestionsByText() {
@@ -156,60 +200,34 @@ public class ConsoleController implements CommandLineRunner {
     private void handleLogin() {
         String username = input("Username = ");
         String password = input("Password = ");
-
-        if (userManagementService.login(username, password)) {
-            System.out.println("Welcome, " + username);
-        } else {
-            System.out.println("Login failed");
-        }
+        userManagementService.login(username, password);
     }
 
     private void handleRegisterUser() {
-        String email;
-        String username = "";
-        String password;
-        boolean usernameAlreadyExists = false;
-
-        email = input("Email = ");
-
-        do {
-            try {
-                username = input("Username = ");
-                usernameAlreadyExists = false;
-                password = input("Password = ");
-                userManagementService.addUser(null, email, username, password, "regular", 0, false);
-            } catch (UserAlreadyExists e) {
-                System.out.println("This username already exists.");
-                usernameAlreadyExists = true;
-            }
-        } while (usernameAlreadyExists);
+        String email = input("Email = ");
+        String username = input("Username = ");
+        String password = input("Password = ");
+        userManagementService.addUser(null, email, username, password, "regular", 0, false);
 
         System.out.println("User " + username + " was registered successfully.");
     }
 
     private void handleAddQuestion() {
-        if (userManagementService.getLoggedUser().isPresent()) {
-            String title;
-            User currentUser;
-            String text;
-            Timestamp creationDateTime;
-            List<Tag> tags = new LinkedList<>();
+        User loggedUser = userManagementService.getLoggedUser();
+        List<Tag> tags = new LinkedList<>();
+        String title = input("Title = ");
+        String[] stringTags = input("Tags (separated by <,>): ").split("\\s*,\\s*");
+        String text = input("Your question: ");
+        Timestamp creationDateTime = new Timestamp(System.currentTimeMillis());
 
-            title = input("Title = ");
-            String[] stringTags = input("Tags (separated by <,>): ").split("\\s*,\\s*");
-            for (String stringTag : stringTags) {
-                Tag tag = tagManagementService.addTag(null, stringTag);
-                tags.add(tag);
-            }
-            currentUser = userManagementService.getLoggedUser().get();
-            text = input("Your question: ");
-            creationDateTime = new Timestamp(System.currentTimeMillis());
-            questionManagementService.addQuestion(null, currentUser.getUserId(), title, text, creationDateTime, tags);
-
-            System.out.println("Your question was added successfully.");
-        } else {
-            System.out.println("Please log in before posting a question.");
+        for (String stringTag : stringTags) {
+            Tag tag = tagManagementService.addTag(null, stringTag);
+            tags.add(tag);
         }
+
+        questionManagementService.addQuestion(null, loggedUser.getUserId(), title, text, creationDateTime, tags, 0);
+
+        System.out.println("Your question was added successfully.");
     }
 
     private void handleListQuestions() {
@@ -223,9 +241,10 @@ public class ConsoleController implements CommandLineRunner {
 
     private void printQuestion(Question question) {
         System.out.println(
-                "[Id=" + question.getQuestionId() + "] " + "\"" + question.getTitle() + "\"" + "\n"
+                "[QuestionId=" + question.getQuestionId() + "] " + "\"" + question.getTitle() + "\"" + "\n"
                 + "Posted by " + userManagementService.findUserById(question.getUserId()).getUsername() + "\n"
                 + "Tags: " + question.getTags() + "\n"
+                + "Score: " + question.getScore() + "\n"
                 + (char)27 + "[33m" + "\"" + question.getText() + "\"" + (char)27 + "[0m" + "\n"
                 + question.getCreationDateTime() + "\n"
                 + "Answers:"
@@ -235,11 +254,19 @@ public class ConsoleController implements CommandLineRunner {
 
     private void printAnswer(Answer answer) {
         System.out.println(
-                "\t" +  "[Id=" + answer.getAnswerId() + "]" + "\n"
-                + "\t"+ "Posted by " + userManagementService.findUserById(answer.getUserId()).getUsername() + "\n"
+                "\t" +  "[AnswerId=" + answer.getAnswerId() + "]" + "\n"
+                + "\t" + "Posted by " + userManagementService.findUserById(answer.getUserId()).getUsername() + "\n"
+                + "\t" + "Score: " + answer.getScore() + "\n"
                 + "\t" + (char)27 + "[35m" + "\"" + answer.getText() + "\"" + (char)27 + "[0m" + "\n"
                 + "\t" +  answer.getCreationDateTime() + "\n"
         );
+    }
+
+    private void printQuestionList(List<Question> questionList) {
+        answerManagementService.getAnswersForQuestion(questionList);
+        for (Question question : questionList) {
+            printQuestion(question);
+        }
     }
 
     private void printAnswerList(List<Answer> answerList) {
@@ -249,13 +276,6 @@ public class ConsoleController implements CommandLineRunner {
             for (Answer answer : answerList) {
                 printAnswer(answer);
             }
-        }
-    }
-
-    private void printQuestionList(List<Question> questionList) {
-        answerManagementService.getAnswersForQuestion(questionList);
-        for (Question question : questionList) {
-            printQuestion(question);
         }
     }
 }

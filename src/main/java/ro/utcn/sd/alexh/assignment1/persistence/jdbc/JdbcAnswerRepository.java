@@ -35,7 +35,8 @@ public class JdbcAnswerRepository implements AnswerRepository {
                         resultSet.getInt("user_id"),
                         resultSet.getInt("question_id"),
                         resultSet.getString("text"),
-                        resultSet.getTimestamp("creation_date_time")
+                        resultSet.getTimestamp("creation_date_time"),
+                        resultSet.getInt("score")
                 ), id
         );
         return answers.isEmpty() ? Optional.empty() : Optional.of(answers.get(0));
@@ -54,7 +55,8 @@ public class JdbcAnswerRepository implements AnswerRepository {
                         resultSet.getInt("user_id"),
                         resultSet.getInt("question_id"),
                         resultSet.getString("text"),
-                        resultSet.getTimestamp("creation_date_time")
+                        resultSet.getTimestamp("creation_date_time"),
+                        resultSet.getInt("score")
                 )
         );
     }
@@ -67,7 +69,8 @@ public class JdbcAnswerRepository implements AnswerRepository {
                         resultSet.getInt("user_id"),
                         resultSet.getInt("question_id"),
                         resultSet.getString("text"),
-                        resultSet.getTimestamp("creation_date_time")
+                        resultSet.getTimestamp("creation_date_time"),
+                        resultSet.getInt("score")
                 ), questionId
         );
     }
@@ -83,13 +86,15 @@ public class JdbcAnswerRepository implements AnswerRepository {
         data.put("question_id", answer.getQuestionId());
         data.put("text", answer.getText());
         data.put("creation_date_time", answer.getCreationDateTime());
+        data.put("score", answer.getScore());
 
         return insert.executeAndReturnKey(data).intValue();
     }
 
     private void update(Answer answer) {
-        template.update("UPDATE answer SET text = ? WHERE answer_id = ?",
+        template.update("UPDATE answer SET text = ?, score = ? WHERE answer_id = ?",
                 answer.getText(),
+                answer.getScore(),
                 answer.getAnswerId());
     }
 }

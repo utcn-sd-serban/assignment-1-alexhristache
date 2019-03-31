@@ -21,4 +21,5 @@ public class Answer {
     private Integer questionId;
     private String text;
     private Timestamp creationDateTime;
+    private int score;
 }

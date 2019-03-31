@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS question (
   title VARCHAR(128) NOT NULL,
   text VARCHAR(1000) NOT NULL,
   creation_date_time DATETIME NOT NULL,
+  score INT NOT NULL,
 
   INDEX(user_id),
   FOREIGN KEY(user_id) REFERENCES user(user_id) ON UPDATE CASCADE ON DELETE CASCADE
@@ -40,6 +41,7 @@ CREATE TABLE IF NOT EXISTS answer (
   question_id INT NOT NULL,
   text VARCHAR(128) NOT NULL,
   creation_date_time DATETIME NOT NULL,
+  score INT NOT NULL,
 
   INDEX(user_id, question_id),
   FOREIGN KEY(user_id) REFERENCES user(user_id) ON UPDATE CASCADE ON DELETE CASCADE,
@@ -47,9 +49,10 @@ CREATE TABLE IF NOT EXISTS answer (
 );
 
 CREATE TABLE IF NOT EXISTS question_vote (
-  user_id INT NOT NULL,
+  question_vote_id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
   question_id INT NOT NULL,
-  type VARCHAR(16) NOT NULL,
+  user_id INT NOT NULL,
+  vote INT NOT NULL,
 
   INDEX(user_id, question_id),
   FOREIGN KEY(question_id) REFERENCES question(question_id) ON UPDATE CASCADE ON DELETE CASCADE,
@@ -57,9 +60,10 @@ CREATE TABLE IF NOT EXISTS question_vote (
 );
 
 CREATE TABLE IF NOT EXISTS answer_vote (
-  user_id INT NOT NULL,
+  answer_vote_id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
   answer_id INT NOT NULL,
-  type VARCHAR(16) NOT NULL,
+  user_id INT NOT NULL,
+  vote INT NOT NULL,
 
   INDEX(user_id, answer_id),
   FOREIGN KEY(answer_id) REFERENCES answer(answer_id) ON UPDATE CASCADE ON DELETE CASCADE,

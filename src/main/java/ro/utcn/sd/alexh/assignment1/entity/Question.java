@@ -22,6 +22,7 @@ public class Question {
     private String title;
     private String text;
     private Timestamp creationDateTime;
+    private int score;
 
     @OneToMany(fetch = FetchType.EAGER)
     @JoinColumn(name = "question_id")
@@ -33,7 +34,7 @@ public class Question {
             inverseJoinColumns = @JoinColumn(name = "tag_id"))
     private List<Tag> tags;
 
-    public Question(Integer questionId, Integer userId, String title, String text, Timestamp creationDateTime, List<Tag> tags) {
+    public Question(Integer questionId, Integer userId, String title, String text, Timestamp creationDateTime, List<Tag> tags, int score) {
         this.questionId = questionId;
         this.userId = userId;
         this.title = title;
@@ -41,9 +42,10 @@ public class Question {
         this.creationDateTime = creationDateTime;
         this.answers = new LinkedList<>();
         this.tags = tags;
+        this.score = score;
     }
 
-    public Question(Integer questionId, Integer userId, String title, String text, Timestamp creationDateTime) {
+    public Question(Integer questionId, Integer userId, String title, String text, Timestamp creationDateTime, int score) {
         this.questionId = questionId;
         this.userId = userId;
         this.title = title;
@@ -51,5 +53,6 @@ public class Question {
         this.creationDateTime = creationDateTime;
         this.answers = new LinkedList<>();
         this.tags = new LinkedList<>();
+        this.score = score;
     }
 }

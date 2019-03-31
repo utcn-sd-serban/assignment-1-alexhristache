@@ -1,6 +1,5 @@
 package ro.utcn.sd.alexh.assignment1.persistence.api;
 
-import ro.utcn.sd.alexh.assignment1.entity.Answer;
 import ro.utcn.sd.alexh.assignment1.entity.Question;
 
 import java.util.List;
@@ -15,4 +14,5 @@ public interface QuestionRepository {
     void remove(Question question);
 
     List<Question> findAll();
+
 }

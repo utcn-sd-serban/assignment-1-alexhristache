@@ -32,4 +32,14 @@ public class JdbcRepositoryFactory implements RepositoryFactory {
     public TagRepository createTagRepository() {
         return new JdbcTagRepository(template);
     }
+
+    @Override
+    public QuestionVoteRepository createQuestionVoteRepository() {
+        return new JdbcQuestionVoteRepository(template);
+    }
+
+    @Override
+    public AnswerVoteRepository createAnswerVoteRepository() {
+        return new JdbcAnswerVoteRepository(template);
+    }
 }
