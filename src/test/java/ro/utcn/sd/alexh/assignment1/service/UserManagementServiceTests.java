@@ -3,6 +3,7 @@ package ro.utcn.sd.alexh.assignment1.service;
 import org.junit.Assert;
 import org.junit.Test;
 import ro.utcn.sd.alexh.assignment1.entity.User;
+import ro.utcn.sd.alexh.assignment1.exception.LoginFailedException;
 import ro.utcn.sd.alexh.assignment1.persistence.api.RepositoryFactory;
 import ro.utcn.sd.alexh.assignment1.persistence.api.UserRepository;
 import ro.utcn.sd.alexh.assignment1.persistence.memory.InMemoryRepositoryFactory;
@@ -28,18 +29,13 @@ public class UserManagementServiceTests {
 
     @Test
     public void loginTest() {
-        //Assert.assertTrue(userManagementService.login("username1", "password1"));
-    }
-
-    @Test
-    public void loginFailedTest() {
-        //Assert.assertFalse(userManagementService.login("username2", "SubscribeToPewdiepie"));
-    }
-
-    @Test
-    public void getLoggedUserTest() {
         userManagementService.login("username1", "password1");
-        //Assert.assertEquals(userManagementService.getLoggedUser().get().getUserId().intValue(), 1);
+        Assert.assertEquals(userManagementService.getLoggedUser(), userManagementService.findUserById(1));
+    }
+
+    @Test(expected = LoginFailedException.class)
+    public void loginFailedTest() {
+        userManagementService.login("username2", "SubscribeToPewdiepie");
     }
 
     @Test

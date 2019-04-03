@@ -152,7 +152,6 @@ public class ConsoleController implements CommandLineRunner {
         try {
             questionManagementService.removeVote(voteService.removeQuestionVote(questionId, loggedUser.getUserId()));
         } catch (QuestionVoteNotFoundException ignored) {
-//            System.out.println("Caught something");
         }
         questionManagementService.addVote(voteService.addQuestionVote(questionId, loggedUser.getUserId(), vote));
     }

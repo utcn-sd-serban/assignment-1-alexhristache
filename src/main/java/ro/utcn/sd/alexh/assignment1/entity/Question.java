@@ -1,6 +1,8 @@
 package ro.utcn.sd.alexh.assignment1.entity;
 
 import lombok.*;
+import org.hibernate.annotations.LazyCollection;
+import org.hibernate.annotations.LazyCollectionOption;
 
 import javax.persistence.*;
 import java.sql.Timestamp;
@@ -28,7 +30,8 @@ public class Question {
     @JoinColumn(name = "question_id")
     private List<Answer> answers;
 
-    @ManyToMany
+    @ManyToMany(cascade = CascadeType.REMOVE)
+    @LazyCollection(LazyCollectionOption.FALSE)
     @JoinTable(name = "question_tag",
             joinColumns = @JoinColumn(name = "question_id"),
             inverseJoinColumns = @JoinColumn(name = "tag_id"))
